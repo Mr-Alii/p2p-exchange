@@ -1,0 +1,1 @@
+export const Mytrade = () => <div>Mytrade Page</div>
