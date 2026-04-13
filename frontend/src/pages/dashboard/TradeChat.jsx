@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Send, ShieldCheck, ArrowLeft, MessageSquare,
-  CheckCircle, Clock, AlertTriangle, Paperclip, Image, MoreVertical
+  Send, ShieldCheck, ArrowLeft, 
+  CheckCircle, Clock, AlertTriangle, Paperclip,  MoreVertical
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -29,7 +29,7 @@ const QUICK_REPLIES = [
 export default function TradeChat() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { user } = useAuth();
+  // const { user } = useAuth();
   const [message, setMessage] = useState('');
   const [releasing, setReleasing] = useState(false);
   const [released, setReleased] = useState(false);

@@ -11,7 +11,7 @@ const PasswordStrength = ({ password }) => {
   ];
   const strength = checks.filter(c => c.ok).length;
   const colors = ['bg-red-500', 'bg-amber-500', 'bg-emerald-500'];
-  const labels = ['Weak', 'Fair', 'Strong'];
+  // const labels = ['Weak', 'Fair', 'Strong'];
 
   if (!password) return null;
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Search, Filter, Plus, X, ChevronDown, ArrowUpDown,
-  TrendingUp, Users, Zap, CheckCircle, Clock, AlertCircle, RefreshCw
+  Search, Filter, Plus, X, ArrowUpDown,
+   CheckCircle, Clock, AlertCircle, RefreshCw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';

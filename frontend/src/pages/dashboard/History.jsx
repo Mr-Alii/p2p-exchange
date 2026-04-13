@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   CheckCircle, Clock, MessageCircle, ArrowUpRight, ArrowDownLeft,
-  Filter, Search, TrendingUp, X
+   Search, TrendingUp, X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 

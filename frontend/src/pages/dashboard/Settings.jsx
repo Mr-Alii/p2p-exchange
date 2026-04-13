@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
-  User, Mail, Lock, Bell, Shield, CheckCircle, Eye, EyeOff,
-  Camera, Loader2, Globe, Phone, MapPin, AlertCircle
+  User, Mail, Lock,  CheckCircle, Eye, EyeOff,
+  Camera, Loader2, Phone, MapPin, AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
