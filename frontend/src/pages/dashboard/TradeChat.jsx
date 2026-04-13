@@ -4,7 +4,7 @@ import {
   CheckCircle, Clock, AlertTriangle, Paperclip,  MoreVertical
 } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+// import { useAuth } from '../../context/AuthContext';
 
 const TRADE_INFO = {
   1: { partner: 'Zubair K.', amount: '1,000 USD', receive: '278,500 PKR', id: '#88291' },
