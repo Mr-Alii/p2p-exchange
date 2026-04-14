@@ -1,273 +1,194 @@
 import React, { useState } from 'react';
-import {
-  User, Mail, Lock,  CheckCircle, Eye, EyeOff,
-  Camera, Loader2, Phone, MapPin, AlertCircle
-} from 'lucide-react';
+import { User, Mail, Lock, Bell, CheckCircle, Eye, EyeOff, Camera, Loader2, AlertCircle, Phone, MapPin } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 
-const Section = ({ title, children }) => (
-  <div className="bg-[#13151e] border border-white/5 rounded-2xl overflow-hidden">
-    <div className="px-6 py-4 border-b border-white/5">
-      <h3 className="text-white font-bold text-sm">{title}</h3>
-    </div>
-    <div className="p-6">{children}</div>
-  </div>
-);
+const API = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
-const Field = ({ label, children, hint }) => (
-  <div className="space-y-1.5">
-    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">{label}</label>
-    {children}
-    {hint && <p className="text-[10px] text-slate-600">{hint}</p>}
-  </div>
-);
+function Card({ title, badge, children }) {
+  return (
+    <div style={{ background:'var(--bg-surface)', border:'1px solid var(--border)', borderRadius:20, overflow:'hidden', boxShadow:'var(--shadow-card)', transition:'background 0.25s, border-color 0.25s' }}>
+      <div style={{ padding:'16px 24px', borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <h3 style={{ color:'var(--text-primary)', fontWeight:700, fontSize:14 }}>{title}</h3>
+        {badge && <span style={{ fontSize:10, fontWeight:700, color:'var(--emerald)', background:'var(--emerald-dim)', border:'1px solid var(--emerald-border)', padding:'2px 8px', borderRadius:999 }}>{badge}</span>}
+      </div>
+      <div style={{ padding:24 }}>{children}</div>
+    </div>
+  );
+}
+
+function Field({ label, hint, children }) {
+  return (
+    <div style={{ marginBottom:16 }}>
+      <label style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.08em', display:'block', marginBottom:6 }}>{label}</label>
+      {children}
+      {hint && <p style={{ fontSize:10, color:'var(--text-muted)', marginTop:4 }}>{hint}</p>}
+    </div>
+  );
+}
+
+function Inp({ icon, value, onChange, type='text', readOnly, placeholder, rightSlot }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div style={{ position:'relative' }}>
+      <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)', pointerEvents:'none', display:'flex' }}>{icon}</span>
+      <input type={type} value={value} onChange={onChange} readOnly={readOnly} placeholder={placeholder}
+        style={{ width:'100%', padding:'11px 14px 11px 40px', paddingRight: rightSlot ? 44 : 14, borderRadius:12, border:`1px solid ${focused ? 'var(--blue)' : 'var(--border)'}`, background: readOnly ? 'var(--bg-surface2)' : 'var(--bg-input)', color: readOnly ? 'var(--text-muted)' : 'var(--text-primary)', fontSize:14, outline:'none', boxShadow: focused ? '0 0 0 3px var(--blue-dim)' : 'none', transition:'all 0.2s', cursor: readOnly ? 'not-allowed' : 'text', boxSizing:'border-box' }}
+        onFocus={() => !readOnly && setFocused(true)}
+        onBlur={() => setFocused(false)}
+      />
+      {rightSlot && <div style={{ position:'absolute', right:13, top:'50%', transform:'translateY(-50%)' }}>{rightSlot}</div>}
+    </div>
+  );
+}
 
 export default function Settings() {
   const { user, updateUser } = useAuth();
+  const [profile, setProfile] = useState({ name: user?.name || '', phone: user?.phone || '', location: user?.location || 'Rawalpindi, Pakistan' });
+  const [passwords, setPasswords] = useState({ current:'', next:'', confirm:'' });
+  const [showPass, setShowPass]   = useState({});
+  const [notifs, setNotifs]       = useState({ tradeUpdates:true, priceAlerts:false, newMatches:true, security:true });
+  const [saving, setSaving]       = useState(false);
+  const [toast,  setToast]        = useState(null);
 
-  const [profile, setProfile] = useState({
-    name: user?.name || '',
-    phone: user?.phone || '',
-    location: user?.location || 'Rawalpindi, Pakistan',
-  });
+  const showToast = (msg, type='success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3500); };
 
-  const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
-  const [showPass, setShowPass] = useState({});
-  const [notifications, setNotifications] = useState({
-    tradeUpdates: true,
-    priceAlerts: false,
-    newMatches: true,
-    security: true,
-  });
-
-  const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState(null);
-
-  const showToast = (msg, type = 'success') => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
-  };
-
-  const handleSaveProfile = async (e) => {
+  const handleSaveProfile = async e => {
     e.preventDefault();
     if (!profile.name.trim()) return showToast('Name cannot be empty', 'error');
     setSaving(true);
-
     try {
-      // Try to update on backend
-      try {
-        await axios.put('http://localhost:5000/api/auth/profile', { name: profile.name });
-      } catch {
-        // Backend might not have this endpoint yet — still update locally
-      }
-
-      // THIS is the key fix: update global AuthContext so sidebar/header refresh immediately
+      try { await axios.put(`${API}/auth/profile`, { name: profile.name }); } catch {}
       updateUser({ name: profile.name, phone: profile.phone, location: profile.location });
-      showToast('Profile updated! Your name is now showing everywhere.');
-    } catch (err) {
-      showToast('Something went wrong. Please try again.', 'error');
-    } finally {
-      setSaving(false);
-    }
+      showToast('Profile updated! Your name now shows everywhere.');
+    } catch { showToast('Something went wrong.', 'error'); }
+    finally { setSaving(false); }
   };
 
-  const handleChangePassword = async (e) => {
+  const handleChangePassword = async e => {
     e.preventDefault();
     if (passwords.next !== passwords.confirm) return showToast('New passwords do not match', 'error');
-    if (passwords.next.length < 6) return showToast('Password must be at least 6 characters', 'error');
+    if (passwords.next.length < 6) return showToast('New password must be 6+ characters', 'error');
     setSaving(true);
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 900));
     setSaving(false);
-    setPasswords({ current: '', next: '', confirm: '' });
+    setPasswords({ current:'', next:'', confirm:'' });
     showToast('Password changed successfully!');
   };
 
-  const initials = profile.name
-    ? profile.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
-    : 'U';
+  const initials = profile.name ? profile.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) : 'U';
+  const tog = key => setShowPass(p => ({ ...p, [key]: !p[key] }));
 
-  const togglePass = (key) => setShowPass(p => ({ ...p, [key]: !p[key] }));
+  const Btn = ({ children, onClick, type='button', disabled, variant='primary' }) => {
+    const bg = variant === 'primary' ? 'var(--blue)' : 'var(--bg-surface2)';
+    const col = variant === 'primary' ? 'white' : 'var(--text-secondary)';
+    return (
+      <button type={type} onClick={onClick} disabled={disabled}
+        style={{ width:'100%', padding:'12px', borderRadius:12, background: disabled ? 'var(--bg-surface2)' : bg, color: disabled ? 'var(--text-muted)' : col, fontWeight:700, fontSize:14, border:'1px solid var(--border)', cursor: disabled ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, transition:'all 0.2s', boxShadow: variant==='primary' && !disabled ? '0 4px 12px var(--blue-dim)' : 'none' }}
+      >{children}</button>
+    );
+  };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
+    <div style={{ maxWidth:640, margin:'0 auto', display:'flex', flexDirection:'column', gap:20 }}>
+
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-20 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl text-sm font-medium animate-in slide-in-from-right-4 duration-300 ${
-          toast.type === 'error'
-            ? 'bg-red-500/90 text-white border border-red-400/30'
-            : 'bg-emerald-500/90 text-white border border-emerald-400/30'
-        }`}>
-          {toast.type === 'error' ? <AlertCircle size={16} /> : <CheckCircle size={16} />}
+        <div className="slide-in-from-right-4" style={{ position:'fixed', top:80, right:24, zIndex:50, display:'flex', alignItems:'center', gap:10, padding:'12px 18px', borderRadius:16, fontWeight:600, fontSize:13, boxShadow:'var(--shadow-modal)', background: toast.type==='error' ? '#dc2626' : '#059669', color:'white', border:`1px solid ${toast.type==='error' ? '#b91c1c' : '#047857'}` }}>
+          {toast.type==='error' ? <AlertCircle size={15}/> : <CheckCircle size={15}/>}
           {toast.msg}
         </div>
       )}
 
-      {/* Avatar section */}
-      <Section title="Profile Picture">
-        <div className="flex items-center gap-5">
-          <div className="relative">
-            <div className="w-20 h-20 rounded-2xl bg-blue-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
-              {initials}
-            </div>
-            <button className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#13151e] border-2 border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors">
-              <Camera size={12} />
+      {/* Avatar */}
+      <Card title="Profile Picture" badge="Active">
+        <div style={{ display:'flex', alignItems:'center', gap:20 }}>
+          <div style={{ position:'relative', flexShrink:0 }}>
+            <div style={{ width:72, height:72, borderRadius:18, background:'var(--blue)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontSize:28, fontWeight:700, boxShadow:'0 0 20px var(--blue-dim)' }}>{initials}</div>
+            <button style={{ position:'absolute', bottom:-4, right:-4, width:26, height:26, borderRadius:'50%', background:'var(--bg-surface)', border:'2px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'var(--text-secondary)' }}>
+              <Camera size={11}/>
             </button>
           </div>
           <div>
-            <p className="text-white font-bold text-lg">{profile.name || 'Your Name'}</p>
-            <p className="text-slate-500 text-sm">{user?.email}</p>
-            <span className="inline-flex items-center gap-1.5 mt-2 text-[10px] font-bold text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2 py-1 rounded-lg">
-              <CheckCircle size={10} /> Verified Account
-            </span>
+            <p style={{ color:'var(--text-primary)', fontWeight:700, fontSize:18 }}>{profile.name || 'Your Name'}</p>
+            <p style={{ color:'var(--text-secondary)', fontSize:13 }}>{user?.email}</p>
+            <div style={{ display:'inline-flex', alignItems:'center', gap:5, marginTop:6, fontSize:10, fontWeight:700, color:'var(--emerald)', background:'var(--emerald-dim)', border:'1px solid var(--emerald-border)', padding:'3px 9px', borderRadius:999 }}>
+              <CheckCircle size={9}/> Verified Member since 2026
+            </div>
           </div>
         </div>
-      </Section>
+      </Card>
 
-      {/* Profile info */}
-      <Section title="Personal Information">
-        <form onSubmit={handleSaveProfile} className="space-y-4">
-          <Field label="Full Name" hint="This name appears in your sidebar, header, and trade listings.">
-            <div className="relative">
-              <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input
-                type="text" required
-                value={profile.name}
-                onChange={e => setProfile(p => ({ ...p, name: e.target.value }))}
-                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500/40 focus:ring-1 focus:ring-blue-500/20 transition-all"
-              />
-            </div>
+      {/* Profile form */}
+      <Card title="Personal Information">
+        <form onSubmit={handleSaveProfile}>
+          <Field label="Full Name" hint="This updates your sidebar, header, and trade listings instantly.">
+            <Inp icon={<User size={15}/>} value={profile.name} onChange={e => setProfile(p=>({...p,name:e.target.value}))} placeholder="Muhammad Ali"/>
           </Field>
-
           <Field label="Email Address" hint="Email cannot be changed for security reasons.">
-            <div className="relative">
-              <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input
-                type="email" readOnly
-                value={user?.email || ''}
-                className="w-full pl-10 pr-4 py-3 bg-white/[0.02] border border-white/5 rounded-xl text-slate-500 text-sm cursor-not-allowed"
-              />
-            </div>
+            <Inp icon={<Mail size={15}/>} value={user?.email||''} readOnly/>
           </Field>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Phone Number">
-              <div className="relative">
-                <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  type="tel"
-                  value={profile.phone}
-                  onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))}
-                  placeholder="+92 300 0000000"
-                  className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500/40 transition-all placeholder-slate-700"
-                />
-              </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+            <Field label="Phone">
+              <Inp icon={<Phone size={15}/>} value={profile.phone} onChange={e=>setProfile(p=>({...p,phone:e.target.value}))} placeholder="+92 300 0000000"/>
             </Field>
-
             <Field label="Location">
-              <div className="relative">
-                <MapPin size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  type="text"
-                  value={profile.location}
-                  onChange={e => setProfile(p => ({ ...p, location: e.target.value }))}
-                  className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500/40 transition-all"
-                />
-              </div>
+              <Inp icon={<MapPin size={15}/>} value={profile.location} onChange={e=>setProfile(p=>({...p,location:e.target.value}))}/>
             </Field>
           </div>
-
-          <button
-            type="submit" disabled={saving}
-            className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
-          >
-            {saving ? <><Loader2 size={15} className="animate-spin" /> Saving…</> : 'Save Profile'}
-          </button>
+          <Btn type="submit" disabled={saving}>
+            {saving ? <><Loader2 size={14} className="animate-spin"/> Saving…</> : 'Save Profile'}
+          </Btn>
         </form>
-      </Section>
+      </Card>
 
       {/* Password */}
-      <Section title="Change Password">
-        <form onSubmit={handleChangePassword} className="space-y-4">
-          {[
-            { key: 'current', label: 'Current Password', placeholder: '••••••••' },
-            { key: 'next', label: 'New Password', placeholder: 'Min. 6 characters' },
-            { key: 'confirm', label: 'Confirm New Password', placeholder: 'Must match above' },
-          ].map(({ key, label, placeholder }) => (
-            <Field key={key} label={label}>
-              <div className="relative">
-                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  type={showPass[key] ? 'text' : 'password'}
-                  value={passwords[key]}
-                  onChange={e => setPasswords(p => ({ ...p, [key]: e.target.value }))}
-                  placeholder={placeholder}
-                  className="w-full pl-10 pr-11 py-3 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-blue-500/40 transition-all placeholder-slate-700"
-                />
-                <button
-                  type="button" onClick={() => togglePass(key)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                >
-                  {showPass[key] ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              </div>
+      <Card title="Change Password">
+        <form onSubmit={handleChangePassword}>
+          {[['current','Current Password'],['next','New Password'],['confirm','Confirm New Password']].map(([k,l]) => (
+            <Field key={k} label={l}>
+              <Inp icon={<Lock size={15}/>} type={showPass[k]?'text':'password'} value={passwords[k]}
+                onChange={e=>setPasswords(p=>({...p,[k]:e.target.value}))} placeholder="••••••••"
+                rightSlot={<button type="button" onClick={()=>tog(k)} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',display:'flex'}}>{showPass[k]?<EyeOff size={14}/>:<Eye size={14}/>}</button>}
+              />
             </Field>
           ))}
-
-          <button
-            type="submit" disabled={saving || !passwords.current || !passwords.next}
-            className="w-full py-3 rounded-xl bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:text-slate-600 text-white font-bold text-sm transition-all flex items-center justify-center gap-2"
-          >
-            {saving ? <><Loader2 size={15} className="animate-spin" /> Updating…</> : 'Change Password'}
-          </button>
+          <Btn type="submit" variant="secondary" disabled={saving||!passwords.current||!passwords.next}>
+            {saving?<><Loader2 size={14} className="animate-spin"/> Updating…</>:'Change Password'}
+          </Btn>
         </form>
-      </Section>
+      </Card>
 
       {/* Notifications */}
-      <Section title="Notification Preferences">
-        <div className="space-y-3">
-          {[
-            { key: 'tradeUpdates', label: 'Trade Updates', desc: 'Status changes on your active trades' },
-            { key: 'priceAlerts', label: 'Price Alerts', desc: 'Rate movements for your currency pairs' },
-            { key: 'newMatches', label: 'New Matches', desc: 'When a new offer matches your criteria' },
-            { key: 'security', label: 'Security Alerts', desc: 'Login attempts and account changes' },
-          ].map(({ key, label, desc }) => (
-            <div key={key} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/[0.02] transition-colors">
-              <div>
-                <p className="text-white text-sm font-medium">{label}</p>
-                <p className="text-slate-500 text-xs">{desc}</p>
-              </div>
-              <button
-                onClick={() => setNotifications(p => ({ ...p, [key]: !p[key] }))}
-                className={`relative w-10 h-5.5 rounded-full border transition-all duration-300 ${
-                  notifications[key]
-                    ? 'bg-blue-600 border-blue-500'
-                    : 'bg-white/5 border-white/10'
-                }`}
-                style={{ minWidth: 40, height: 22 }}
-              >
-                <span
-                  className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-md"
-                  style={{ transform: notifications[key] ? 'translateX(18px)' : 'translateX(0)' }}
-                />
-              </button>
+      <Card title="Notification Preferences">
+        {[
+          { k:'tradeUpdates', l:'Trade Updates',  d:'Status changes on your active trades' },
+          { k:'priceAlerts',  l:'Price Alerts',   d:'Rate movements for your currency pairs' },
+          { k:'newMatches',   l:'New Matches',    d:'When a new offer matches your criteria' },
+          { k:'security',     l:'Security Alerts',d:'Login attempts and account changes' },
+        ].map(({k,l,d}) => (
+          <div key={k} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 0', borderBottom:'1px solid var(--border)' }}>
+            <div>
+              <p style={{ color:'var(--text-primary)', fontSize:14, fontWeight:500 }}>{l}</p>
+              <p style={{ color:'var(--text-muted)', fontSize:12, marginTop:1 }}>{d}</p>
             </div>
-          ))}
-        </div>
-      </Section>
+            <button onClick={() => setNotifs(p=>({...p,[k]:!p[k]}))} style={{ flexShrink:0, width:40, height:22, borderRadius:11, border:`1px solid ${notifs[k]?'var(--blue)':'var(--border)'}`, background: notifs[k]?'var(--blue)':'var(--bg-input)', cursor:'pointer', padding:2, transition:'all 0.25s', display:'flex', alignItems:'center' }}>
+              <span style={{ width:16, height:16, borderRadius:'50%', background:'white', boxShadow:'0 1px 3px rgba(0,0,0,0.3)', transform: notifs[k]?'translateX(18px)':'none', transition:'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)', display:'block' }}/>
+            </button>
+          </div>
+        ))}
+      </Card>
 
       {/* Danger zone */}
-      <Section title="Account">
-        <div className="flex items-center justify-between p-4 rounded-xl bg-red-500/5 border border-red-500/20">
+      <Card title="Account">
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', borderRadius:14, background:'var(--red-dim)', border:'1px solid var(--red-border)' }}>
           <div>
-            <p className="text-white text-sm font-medium">Delete Account</p>
-            <p className="text-slate-500 text-xs">Permanently remove your account and all data</p>
+            <p style={{ color:'var(--text-primary)', fontSize:14, fontWeight:500 }}>Delete Account</p>
+            <p style={{ color:'var(--text-muted)', fontSize:12 }}>Permanently remove your account and all data</p>
           </div>
-          <button className="px-4 py-2 rounded-lg text-red-400 border border-red-500/30 text-xs font-bold hover:bg-red-500/10 transition-all">
-            Delete
-          </button>
+          <button style={{ padding:'8px 16px', borderRadius:10, color:'var(--red)', border:'1px solid var(--red-border)', background:'none', fontSize:12, fontWeight:700, cursor:'pointer' }}>Delete</button>
         </div>
-      </Section>
+      </Card>
     </div>
   );
 }
